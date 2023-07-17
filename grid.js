@@ -64,133 +64,87 @@ function initializeMasonry() {
 const base = "app1Z4C0dO7ufbxUS";
 const table = "tblGBDKi3iFTW5GT2";
 const apiKey = "patKNF8F1xv6adKyZ.7a5269c2c65164ef8233b6e7c3b3d9f977ae7e9e7c65182d87827db1ead9fa12";
-const desiredFields = "Work (copyright to their respective oweners),Name,Notes,Website,Category,Instagram";
+const desiredFields = "Work,Name,Notes,Website,Category,Instagram";
 
-// Fetch Airtable schema to get fields information
-const metaUrl = `https://api.airtable.com/v0/meta/bases/${base}/tables`;
-const metaHeaders = { Authorization: `Bearer ${apiKey}` };
+// Fetch Airtable data
+const dataUrl = `https://api.airtable.com/v0/${base}/${table}`;
+const view = "viwZ36CXYDIDlsBBe";
+const pageSize = 16;
+const dataHeaders = { Authorization: `Bearer ${apiKey}` };
+let offset = ""; // Initialize offset variable for pagination
 
-let offset = 0; // Initialize offset variable for pagination
-const pageSize = 16; // Set the desired page size
+function loadNextRecords() {
+  const urlWithOffset = `${dataUrl}?view=${view}&offset=${offset}&limit=${pageSize}`;
 
-fetch(metaUrl, { headers: metaHeaders })
-  .then(response => response.json())
-  .then(meta => {
-    const tableMeta = meta.tables.find(t => t.id === table);
+  fetch(urlWithOffset, { headers: dataHeaders })
+    .then(response => response.json())
+    .then(data => {
+      const records = data.records;
 
-    if (!tableMeta) {
-      throw new Error("Table not found in the schema.");
-    }
+      // Generate grid items using records data
+      const gridContainer = document.getElementById("gridContainer");
+      const recordsList = records.map(record => {
+        const fields = desiredFields.split(",").map(field => {
+          const fieldValue = record.fields[field.trim()];
+          return fieldValue || "";
+        });
+        return fields;
+      });
 
-    const fieldsSchema = {};
-    tableMeta.fields.forEach(field => {
-      fieldsSchema[field.name] = field.type;
-    });
+      recordsList.forEach(recordFields => {
+        const item = document.createElement("div");
+        item.className = "item";
 
-    // Split desired fields into an array
-    const desiredFieldsArray = desiredFields.split(",").map(field => field.trim());
+        // Fetch and add image to the item div
+        const imageSrc = recordFields[0];
+        if (imageSrc !== "") {
+          const img = document.createElement("img");
+          img.src = imageSrc.trim();
+          img.style.width = "100%"; // Set the image width to 100%
+          img.style.height = "auto"; // Set the image height to auto for maintaining aspect ratio
+          item.appendChild(img);
+        }
 
-    // Fetch data from Airtable
-    const view = "viwZ36CXYDIDlsBBe";
+        const cardBody = document.createElement("div");
+        cardBody.className = "card-body";
 
-    function loadNextRecords() {
-      const dataUrl = `https://api.airtable.com/v0/${base}/${table}?view=${view}&offset=${offset}&limit=${pageSize}`;
-      const dataHeaders = { Authorization: `Bearer ${apiKey}` };
+        recordFields.slice(1).forEach((fieldValue, index) => {
+          const fieldName = desiredFields.split(",")[index + 1].trim();
+          const fieldDiv = document.createElement("div");
+          fieldDiv.id = `${fieldName}`;
 
-      fetch(dataUrl, { headers: dataHeaders })
-        .then(response => response.json())
-        .then(data => {
-          const records = data.records;
+          fieldDiv.textContent = fieldValue;
 
-          // Generate grid items using records data
-          const gridContainer = document.getElementById("gridContainer");
-          const recordsList = records.map(record => {
-            const fields = desiredFieldsArray.map(field => {
-              const fieldValue = record.fields[field];
-              const fieldType = fieldsSchema[field];
-              if (fieldType === "multipleAttachments") {
-                return fieldValue?.[0]?.thumbnails?.large?.url || "";
-              }
-              return fieldValue || "";
-            });
-            return fields;
-          });
+          cardBody.appendChild(fieldDiv);
 
-          recordsList.forEach(recordFields => {
-            const item = document.createElement("div");
-            item.className = "item";
+          // Add spacer div after each field
+          if (index < desiredFields.split(",").length - 2) {
+            const spacerDiv = document.createElement("div");
+            spacerDiv.className = "spacer";
+            cardBody.appendChild(spacerDiv);
+          }
+        });
 
-            // Fetch and add image to the item div
-            const imageSrc = recordFields[0];
-            if (imageSrc !== "") {
-              const img = document.createElement("img");
-              img.src = imageSrc.trim();
-              item.appendChild(img);
-            }
+        item.appendChild(cardBody);
+        gridContainer.appendChild(item);
+      });
 
-            const cardBody = document.createElement("div");
-            cardBody.className = "card-body";
+      offset = data.offset; // Update the offset for pagination
+      initializeMasonry(); // Initialize Masonry after the grid items are added to the DOM
+    })
+    .catch(error => console.error(error.message));
+}
 
-            recordFields.slice(1).forEach((fieldValue, index) => {
-              const fieldName = desiredFieldsArray[index + 1];
-              const fieldType = fieldsSchema[fieldName];
-              const fieldDiv = document.createElement("div");
-              fieldDiv.id = `${fieldName}--${fieldType}`;
+// Load the initial set of records
+loadNextRecords();
 
-              if (fieldType === "multipleSelects" || fieldType === "singleSelect") {
-                let valuesArray = fieldValue;
-                if (typeof fieldValue === "string") {
-                  valuesArray = fieldValue.split(",");
-                }
+// Add event listener for scrolling to the end of the list
+window.addEventListener('scroll', function() {
+  const windowHeight = window.innerHeight;
+  const documentHeight = document.documentElement.scrollHeight;
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
 
-                const listContainer = document.createElement("ul");
-                listContainer.className = "multipleSelects";
-
-                valuesArray.forEach(value => {
-                  const listItem = document.createElement("li");
-                  listItem.textContent = value.trim();
-                  listContainer.appendChild(listItem);
-                });
-
-                fieldDiv.appendChild(listContainer);
-              } else {
-                fieldDiv.textContent = fieldValue;
-              }
-
-              cardBody.appendChild(fieldDiv);
-
-              // Add spacer div after each field
-              if (index < desiredFieldsArray.length - 2) {
-                const spacerDiv = document.createElement("div");
-                spacerDiv.className = "spacer";
-                cardBody.appendChild(spacerDiv);
-              }
-            });
-
-            item.appendChild(cardBody);
-            gridContainer.appendChild(item);
-          });
-
-          // Increment the offset for pagination
-          offset += records.length;
-
-          // Initialize Masonry after the grid items are added to the DOM
-          initializeMasonry();
-        })
-        .catch(error => console.error(error.message));
-    }
-
-    // Load the initial set of records
-    loadNextRecords();
-
-    // Add event listener for scrolling to the end of the list
-    window.addEventListener('scroll', function() {
-      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const scrolledToBottom = Math.ceil(window.scrollY) >= scrollableHeight;
-
-      if (scrolledToBottom) {
-        loadNextRecords();
-      }
-    });
-  })
-  .catch(error => console.error(error.message));
+  if (scrollTop + windowHeight >= documentHeight) {
+    loadNextRecords(); // Load the next set of records
+  }
+});
