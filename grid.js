@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     const parentDiv = document.getElementById('gridContainer'); // Get the parent div
 
+    let offset = 0; // Initialize offset variable for pagination
+const pageSize = 16; // Set the desired page size
+let isLoading = false; // Add a flag to track loading state
+
     if (parentDiv) {
         const childDivs = parentDiv.querySelectorAll('.item'); // Get all child divs
         let imagesCount = 0; // Change variable name to imagesCount
@@ -51,6 +55,54 @@ function initializeMasonry() {
       percentPosition: true
     });
 
+  function loadNextRecords() {
+  if (isLoading) return; // Exit if already loading
+
+  isLoading = true; // Set loading flag
+
+  fetch(dataUrl, { headers: dataHeaders })
+    .then(response => response.json())
+    .then(data => {
+      const newRecords = data.records;
+
+      if (newRecords.length === 0) {
+        // No more records to load
+        isLoading = false; // Reset loading flag
+        return;
+      }
+
+      offset += newRecords.length; // Increment the offset
+
+      // Generate grid items using new records data
+      const recordsList = newRecords.map(record => {
+        // Same code as before to generate record fields
+      });
+
+      recordsList.forEach(recordFields => {
+        // Same code as before to create and append grid items
+      });
+
+      isLoading = false; // Reset loading flag
+      initializeMasonry(); // Reinitialize Masonry layout
+    })
+    .catch(error => {
+      isLoading = false; // Reset loading flag
+      console.error(error.message);
+    });
+}
+
+
+      window.addEventListener('scroll', function() {
+  const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const scrolledToBottom = Math.ceil(window.scrollY) >= scrollableHeight;
+
+  if (scrolledToBottom) {
+    loadNextRecords();
+  }
+});
+
+      
+
     // Show the grid and grid items
     gridContainer.style.visibility = "visible";
     const items = document.getElementsByClassName("item");
@@ -89,7 +141,7 @@ function initializeMasonry() {
 
       // Fetch data from Airtable
       const view = "viwZ36CXYDIDlsBBe";
-      const dataUrl = `https://api.airtable.com/v0/${base}/${table}?view=${view}`;
+      const dataUrl = `https://api.airtable.com/v0/${base}/${table} ?view=${view}&offset=${offset}&limit=${pageSize}`;  
       const dataHeaders = { Authorization: `Bearer ${apiKey}` };
 
       fetch(dataUrl, { headers: dataHeaders })
