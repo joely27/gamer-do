@@ -1,49 +1,45 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const parentDiv = document.getElementById('gridContainer'); // Get the parent div
+  const parentDiv = document.getElementById('gridContainer'); // Get the parent div
 
-    let offset = 0; // Initialize offset variable for pagination
-const pageSize = 16; // Set the desired page size
-let isLoading = false; // Add a flag to track loading state
+  if (parentDiv) {
+    const childDivs = parentDiv.querySelectorAll('.item'); // Get all child divs
+    let imagesCount = 0; // Change variable name to imagesCount
+    let allImagesLoaded = false;
 
-    if (parentDiv) {
-        const childDivs = parentDiv.querySelectorAll('.item'); // Get all child divs
-        let imagesCount = 0; // Change variable name to imagesCount
-        let allImagesLoaded = false;
+    for (let i = 0; i < childDivs.length; i++) {
+      const childDiv = childDivs[i];
+      childDiv.style.marginBottom = '20px'; // Add a 20px bottom margin to each child div
 
-        for (let i = 0; i < childDivs.length; i++) {
-            const childDiv = childDivs[i];
-            childDiv.style.marginBottom = '20px'; // Add a 20px bottom margin to each child div
+      // Check if the child div contains an image
+      const image = childDiv.querySelector('img');
+      if (image) {
+        image.addEventListener('load', function() {
+          imagesCount++; // Change variable name to imagesCount
 
-            // Check if the child div contains an image
-            const image = childDiv.querySelector('img');
-            if (image) {
-                image.addEventListener('load', function() {
-                    imagesCount++; // Change variable name to imagesCount
-
-                    // Check if all images have finished loading
-                    if (imagesCount === childDivs.length) { // Change variable name to imagesCount
-                        allImagesLoaded = true;
-                        initializeMasonry(); // Call the function after all images have loaded
-                    }
-                });
-            } else {
-                imagesCount++; // Change variable name to imagesCount
-
-                // Check if all images have finished loading
-                if (imagesCount === childDivs.length) { // Change variable name to imagesCount
-                    allImagesLoaded = true;
-                    initializeMasonry(); // Call the function if there are no images to load
-                }
-            }
-        }
-
-        // Use the imagesLoaded library to detect when all images have finished loading
-        imagesLoaded(parentDiv, function() { // Change function name to avoid conflicts
-            if (!allImagesLoaded) {
-                initializeMasonry(); // Call the function after all images have loaded (additional delay)
-            }
+          // Check if all images have finished loading
+          if (imagesCount === childDivs.length) { // Change variable name to imagesCount
+            allImagesLoaded = true;
+            initializeMasonry(); // Call the function after all images have loaded
+          }
         });
+      } else {
+        imagesCount++; // Change variable name to imagesCount
+
+        // Check if all images have finished loading
+        if (imagesCount === childDivs.length) { // Change variable name to imagesCount
+          allImagesLoaded = true;
+          initializeMasonry(); // Call the function if there are no images to load
+        }
+      }
     }
+
+    // Use the imagesLoaded library to detect when all images have finished loading
+    imagesLoaded(parentDiv, function() { // Change function name to avoid conflicts
+      if (!allImagesLoaded) {
+        initializeMasonry(); // Call the function after all images have loaded (additional delay)
+      }
+    });
+  }
 });
 
 function initializeMasonry() {
@@ -55,54 +51,6 @@ function initializeMasonry() {
       percentPosition: true
     });
 
-  function loadNextRecords() {
-  if (isLoading) return; // Exit if already loading
-
-  isLoading = true; // Set loading flag
-
-  fetch(dataUrl, { headers: dataHeaders })
-    .then(response => response.json())
-    .then(data => {
-      const newRecords = data.records;
-
-      if (newRecords.length === 0) {
-        // No more records to load
-        isLoading = false; // Reset loading flag
-        return;
-      }
-
-      offset += newRecords.length; // Increment the offset
-
-      // Generate grid items using new records data
-      const recordsList = newRecords.map(record => {
-        // Same code as before to generate record fields
-      });
-
-      recordsList.forEach(recordFields => {
-        // Same code as before to create and append grid items
-      });
-
-      isLoading = false; // Reset loading flag
-      initializeMasonry(); // Reinitialize Masonry layout
-    })
-    .catch(error => {
-      isLoading = false; // Reset loading flag
-      console.error(error.message);
-    });
-}
-
-
-      window.addEventListener('scroll', function() {
-  const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-  const scrolledToBottom = Math.ceil(window.scrollY) >= scrollableHeight;
-
-  if (scrolledToBottom) {
-    loadNextRecords();
-  }
-});
-
-      
-
     // Show the grid and grid items
     gridContainer.style.visibility = "visible";
     const items = document.getElementsByClassName("item");
@@ -112,36 +60,41 @@ function initializeMasonry() {
   }, 1000); // Delay Masonry initialization by 1 second
 }
 
-  // Your Airtable configuration and data fetching code
-  const base = "app1Z4C0dO7ufbxUS";
-  const table = "tblGBDKi3iFTW5GT2";
-  const apiKey = "patKNF8F1xv6adKyZ.7a5269c2c65164ef8233b6e7c3b3d9f977ae7e9e7c65182d87827db1ead9fa12";
-  const desiredFields = "Work (copyright to their respective oweners),Name,Notes,Website,Category,Instagram";
+// Your Airtable configuration and data fetching code
+const base = "app1Z4C0dO7ufbxUS";
+const table = "tblGBDKi3iFTW5GT2";
+const apiKey = "patKNF8F1xv6adKyZ.7a5269c2c65164ef8233b6e7c3b3d9f977ae7e9e7c65182d87827db1ead9fa12";
+const desiredFields = "Work (copyright to their respective oweners),Name,Notes,Website,Category,Instagram";
 
-  // Fetch Airtable schema to get fields information
-  const metaUrl = `https://api.airtable.com/v0/meta/bases/${base}/tables`;
-  const metaHeaders = { Authorization: `Bearer ${apiKey}` };
+// Fetch Airtable schema to get fields information
+const metaUrl = `https://api.airtable.com/v0/meta/bases/${base}/tables`;
+const metaHeaders = { Authorization: `Bearer ${apiKey}` };
 
-  fetch(metaUrl, { headers: metaHeaders })
-    .then(response => response.json())
-    .then(meta => {
-      const tableMeta = meta.tables.find(t => t.id === table);
+let offset = 0; // Initialize offset variable for pagination
+const pageSize = 16; // Set the desired page size
 
-      if (!tableMeta) {
-        throw new Error("Table not found in the schema.");
-      }
+fetch(metaUrl, { headers: metaHeaders })
+  .then(response => response.json())
+  .then(meta => {
+    const tableMeta = meta.tables.find(t => t.id === table);
 
-      const fieldsSchema = {};
-      tableMeta.fields.forEach(field => {
-        fieldsSchema[field.name] = field.type;
-      });
+    if (!tableMeta) {
+      throw new Error("Table not found in the schema.");
+    }
 
-      // Split desired fields into an array
-      const desiredFieldsArray = desiredFields.split(",").map(field => field.trim());
+    const fieldsSchema = {};
+    tableMeta.fields.forEach(field => {
+      fieldsSchema[field.name] = field.type;
+    });
 
-      // Fetch data from Airtable
-      const view = "viwZ36CXYDIDlsBBe";
-      const dataUrl = `https://api.airtable.com/v0/${base}/${table} ?view=${view}&offset=${offset}&limit=${pageSize}`;  
+    // Split desired fields into an array
+    const desiredFieldsArray = desiredFields.split(",").map(field => field.trim());
+
+    // Fetch data from Airtable
+    const view = "viwZ36CXYDIDlsBBe";
+
+    function loadNextRecords() {
+      const dataUrl = `https://api.airtable.com/v0/${base}/${table}?view=${view}&offset=${offset}&limit=${pageSize}`;
       const dataHeaders = { Authorization: `Bearer ${apiKey}` };
 
       fetch(dataUrl, { headers: dataHeaders })
@@ -218,9 +171,26 @@ function initializeMasonry() {
             gridContainer.appendChild(item);
           });
 
+          // Increment the offset for pagination
+          offset += records.length;
+
           // Initialize Masonry after the grid items are added to the DOM
           initializeMasonry();
         })
         .catch(error => console.error(error.message));
-    })
-    .catch(error => console.error(error.message));
+    }
+
+    // Load the initial set of records
+    loadNextRecords();
+
+    // Add event listener for scrolling to the end of the list
+    window.addEventListener('scroll', function() {
+      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrolledToBottom = Math.ceil(window.scrollY) >= scrollableHeight;
+
+      if (scrolledToBottom) {
+        loadNextRecords();
+      }
+    });
+  })
+  .catch(error => console.error(error.message));
